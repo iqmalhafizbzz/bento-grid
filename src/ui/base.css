@@ -1,0 +1,72 @@
+/* App-wide base on top of Arc's foundation tokens. Only editor-specific tokens live here. */
+:root {
+  --font-geist: 'Geist';
+  --font-inter: 'Inter';
+  --canvas-bg: oklch(93% 0 0);
+  --canvas-dot: oklch(85% 0 0);
+  --panel-w-left: 288px;
+  /* All motion 2x faster than Arc's defaults, and smooth: the spring easing (which overshoots)
+     is replaced by the standard ease-out curve. */
+  --duration-instant: 60ms;
+  --duration-fast: 80ms;
+  --duration-standard: 120ms;
+  --duration-considered: 240ms;
+  --duration-spring: 290ms;
+  --ease-spring: var(--ease-standard);
+  --panel-w-right: 328px;
+}
+:root[data-theme='dark'] {
+  --canvas-bg: oklch(14% 0 0);
+  --canvas-dot: oklch(24% 0 0);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+kbd {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
