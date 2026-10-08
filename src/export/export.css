@@ -1,6 +1,31 @@
 .export-dialog {
   width: min(760px, calc(100vw - 32px));
   max-width: none;
+  /* One fixed height for every tab: header and tabs stay put, the active panel scrolls. */
+  height: min(800px, calc(100dvh - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.export-dialog > div:nth-child(2) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+.export-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.export-tabs [role='tabpanel'] {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-bottom: var(--space-6);
 }
 /* Format tabs span the dialog, four equal columns, icon and label centered on one line. */
 .export-tabs > div:first-child {
