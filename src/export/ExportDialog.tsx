@@ -303,36 +303,42 @@ function ImageTab({ doc, size }: { doc: BentoDoc; size: Size }) {
       <div className="image-preview" style={{ aspectRatio: `${size.w}/${size.h}` }}>
         {preview ? <img src={preview} alt="Preview of the exported image" /> : <span className="export-meta">Rendering the preview…</span>}
       </div>
-      <Group label="Format">
-        <SegmentedControl
-          label="Format"
-          value={format}
-          onValueChange={(v) => setFormat(v as ImageFormat)}
-          options={[
-            { value: 'png', label: 'PNG' },
-            { value: 'jpeg', label: 'JPEG' },
-            { value: 'webp', label: 'WebP' },
-          ]}
-        />
-      </Group>
-      <Group label={`Scale (${Math.round(size.w * scale)}×${Math.round(size.h * scale)})`}>
-        <SegmentedControl
-          label="Scale"
-          value={String(scale)}
-          onValueChange={(v) => setScale(Number(v))}
-          options={[
-            { value: '0.5', label: '0.5×' },
-            { value: '1', label: '1×' },
-            { value: '2', label: '2×' },
-            { value: '3', label: '3×' },
-          ]}
-        />
-      </Group>
+      <div className="export-pair">
+        <Group label="Format">
+          <SegmentedControl
+            className="export-seg"
+            label="Format"
+            value={format}
+            onValueChange={(v) => setFormat(v as ImageFormat)}
+            options={[
+              { value: 'png', label: 'PNG' },
+              { value: 'jpeg', label: 'JPEG' },
+              { value: 'webp', label: 'WebP' },
+            ]}
+          />
+        </Group>
+        <Group label={`Scale (${Math.round(size.w * scale)}×${Math.round(size.h * scale)})`}>
+          <SegmentedControl
+            className="export-seg"
+            label="Scale"
+            value={String(scale)}
+            onValueChange={(v) => setScale(Number(v))}
+            options={[
+              { value: '0.5', label: '0.5×' },
+              { value: '1', label: '1×' },
+              { value: '2', label: '2×' },
+              { value: '3', label: '3×' },
+            ]}
+          />
+        </Group>
+      </div>
       {format !== 'png' && (
         <Slider label="Quality" value={quality} min={0.3} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onValueChange={(v) => setQuality(v as number)} />
       )}
       <div className="export-actions">
         <Button
+          className="export-download"
+          size="lg"
           loading={busy}
           onClick={() =>
             run(async () => download(await renderImage(doc, size, { format, scale, quality }), `bento.${format === 'jpeg' ? 'jpg' : format}`))

@@ -83,3 +83,47 @@
   max-height: 320px;
   display: block;
 }
+
+/* Format and Scale side by side, equal widths; each segmented control fills its column. */
+.export-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.export-pair .ui-group {
+  min-width: 0;
+}
+.export-seg {
+  display: flex;
+  width: 100%;
+}
+.export-seg > div {
+  flex: 1;
+}
+.export-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+@media (max-width: 520px) {
+  .export-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Full-width download, in the toolbar Export button's lighter gray. */
+.export-actions:has(.export-download) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.export-dialog .export-download {
+  width: 100%;
+  min-height: 44px;
+  border-color: var(--border-strong);
+  background: color-mix(in oklab, var(--surface), var(--foreground) 14%);
+  color: var(--foreground);
+  font-weight: 600;
+}
+.export-dialog .export-download:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--surface), var(--foreground) 20%);
+}
