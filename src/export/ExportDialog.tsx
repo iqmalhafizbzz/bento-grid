@@ -144,7 +144,7 @@ export function ExportDialog({
         description={doc.sizeMode === 'fit' ? `Responsive, previewing at ${size.w}×${size.h}` : `${size.w}×${size.h}, ${doc.cells.length} ${doc.cells.length === 1 ? 'box' : 'boxes'}`}
         className="export-dialog"
       >
-        <Tabs value={tab} onValueChange={(v) => onTab(v as ExportTab)}>
+        <Tabs className="export-tabs" value={tab} onValueChange={(v) => onTab(v as ExportTab)}>
           <TabsList aria-label="Export format">
             <TabsTrigger value="html">
               <FileCode2 size={15} aria-hidden="true" /> HTML

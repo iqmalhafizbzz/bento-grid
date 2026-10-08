@@ -2,6 +2,32 @@
   width: min(760px, calc(100vw - 32px));
   max-width: none;
 }
+/* Format tabs span the dialog, four equal columns, icon and label centered on one line. */
+.export-tabs > div:first-child {
+  display: flex;
+  width: 100%;
+}
+.export-tabs > div:first-child > div {
+  flex: 1;
+}
+.export-tabs [role='tablist'] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+.export-tabs [role='tab'] {
+  min-width: 0;
+}
+.export-tabs [role='tab'] > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+.export-tabs [role='tab'] svg {
+  flex: none;
+  display: block;
+}
 .export-pane {
   display: grid;
   gap: var(--space-4);
