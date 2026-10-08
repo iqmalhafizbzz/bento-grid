@@ -20,7 +20,7 @@ const SIZE_OPTIONS: SelectOption<SizeChoice>[] = [
 
 /** Canvas-wide properties, shown under the sidebar's Canvas header. */
 export function CanvasSections() {
-  const { doc, setDoc, selected } = useStore()
+  const { doc, setDoc } = useStore()
   const size = useDocSize(doc)
   const { setGuide } = useEditor()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -71,9 +71,6 @@ export function CanvasSections() {
         </FieldRow>
       </PanelSection>
 
-      {/* Background is hidden while a box is selected. */}
-      {!selected && (
-        <>
       <PanelSection
         title="Background"
         empty={!hasBg}
@@ -129,8 +126,6 @@ export function CanvasSections() {
           }}
         />
       </PanelSection>
-        </>
-      )}
 
       <PanelSection title="Spacing">
         <SpacingRow doc={doc} field="gapX" label="Horizontal gap" icon={<ArrowLeftRight />} onGuide={setGuide} setDoc={setDoc} />

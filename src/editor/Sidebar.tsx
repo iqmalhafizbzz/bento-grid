@@ -82,13 +82,13 @@ export function Sidebar({ onExport, onNew, onDelete }: { onExport: (tab: ExportT
 
       <OverlayScroll>
         <BentoPicker onNew={onNew} onDelete={onDelete} />
-        {activeId && (
+        {/* Canvas and Box controls are separate: selecting a box swaps Canvas out for Box. */}
+        {activeId && !selected && (
           <>
             <PanelHeader title="Canvas" />
             <CanvasSections />
           </>
         )}
-        {/* The Box group appears once a box is selected. */}
         {activeId && selected && (
           <>
             <PanelHeader title="Box">
