@@ -11,20 +11,14 @@
   grid-area: canvas;
 }
 
+/* Phones: the canvas fills the screen above the collapsed properties sheet (see ui/sheet.css). */
 @media (max-width: 640px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 50%);
-    grid-template-areas:
-      'canvas'
-      'sidebar';
+    grid-template-areas: 'canvas';
   }
-  .sidebar {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-  }
-  .sidebar-handle {
-    display: none;
+  .canvas-viewport {
+    padding-bottom: 156px;
   }
 }
 

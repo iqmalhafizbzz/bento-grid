@@ -1,0 +1,163 @@
+/*
+ * Phone sizing: legible type (15–16px body, 16px in every text input so iOS doesn't zoom) and
+ * touch targets of 40–44px. Selectors start with `body` so they win over component styles that
+ * load later (the export dialog is lazy-loaded).
+ */
+@media (max-width: 640px) {
+  :root {
+    --text-xs: 13px;
+    --text-sm: 15px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 18px;
+    --text-2xl: 20px;
+    --text-3xl: 20px;
+    --text-4xl: 20px;
+    --text-5xl: 20px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 16px is the size below which iOS Safari zooms into a focused field; component rules
+     (`.p-field input`, `.cp-value input`) are more specific, hence !important. */
+  body input:not([type='range'], [type='checkbox'], [type='radio']),
+  body textarea,
+  body select {
+    font-size: 16px !important;
+  }
+
+  /* Toolbar */
+  body .toolbar {
+    min-height: 56px;
+    gap: 10px;
+    padding: 0 12px 0 16px;
+  }
+  body .tb-btn {
+    min-width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+  body .tb-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  body .tb-menu-item {
+    height: 44px;
+    font-size: 16px;
+  }
+  body .tb-menu-hint {
+    font-size: 13px;
+  }
+
+  /* Bento selector */
+  body .bento-bar {
+    gap: 4px;
+    padding: 8px 12px 12px 16px;
+  }
+  body .bento-selector {
+    height: 48px;
+    font-size: 16px;
+  }
+  body .bento-menu-search {
+    height: 44px;
+  }
+  body .bento-option {
+    padding: 10px 12px;
+  }
+  body .bento-option-name {
+    font-size: 16px;
+  }
+  body .bento-option-date {
+    font-size: 13px;
+  }
+  body .bento-menu-empty {
+    font-size: 15px;
+  }
+
+  /* Panels */
+  body .p-header h2 {
+    font-size: 17px;
+  }
+  body .p-section-head {
+    min-height: 40px;
+  }
+  body .p-section-head h3 {
+    font-size: 15px;
+  }
+  body .p-icon {
+    width: 40px;
+    height: 40px;
+  }
+  body .p-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  body .p-field,
+  body .p-paint,
+  body .p-media,
+  body .p-segments,
+  body .p-slider,
+  body .p-button {
+    height: 40px;
+    font-size: 15px;
+  }
+  body .p-prefix {
+    min-width: 36px;
+  }
+  body .p-label,
+  body .p-select,
+  body .p-segments-text button,
+  body .p-popover-title {
+    font-size: 15px;
+  }
+  body .p-hint {
+    font-size: 13px;
+  }
+  body .p-combo-search {
+    height: 44px;
+  }
+  body .p-combo-option {
+    height: 44px;
+    font-size: 16px;
+  }
+  body .p-combo-empty {
+    font-size: 15px;
+  }
+
+  /* Color picker */
+  body .cp {
+    font-size: 15px;
+  }
+  body .cp-icon {
+    width: 40px;
+    height: 40px;
+  }
+  body .cp-format,
+  body .cp-value {
+    height: 40px;
+  }
+
+  /* Export drawer: full drawer height, panel scrolls under the tabs */
+  body .drawer.export-dialog {
+    width: auto;
+    height: 92dvh;
+  }
+  body .export-tabs [role='tab'] {
+    min-height: 40px;
+    padding: 0 8px;
+  }
+  body .export-dialog .export-download,
+  body .bento-form-actions button {
+    min-height: 48px;
+  }
+
+  /* Bento drawers */
+  body .drawer.bento-dialog {
+    width: auto;
+  }
+  body .bento-form-label {
+    font-size: 15px;
+  }
+  body .bento-form-actions > * {
+    flex: 1;
+  }
+}

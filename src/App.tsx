@@ -13,6 +13,7 @@ import { StoreProvider, useStore } from './model/store'
 import { ToastStack, ToastStackProvider } from '@/components/arc/toast-stack/toast-stack'
 import { ToastBridge, toast } from './ui'
 import './app.css'
+import './mobile.css'
 
 const ExportDialog = lazy(() => import('./export/ExportDialog').then((m) => ({ default: m.ExportDialog })))
 

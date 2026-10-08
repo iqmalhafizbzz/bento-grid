@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/arc/button/button'
 import { CodeBlock } from '@/components/arc/code-block/code-block'
 import { CopyButton } from '@/components/arc/copy-button/copy-button'
-import { Dialog, DialogContent } from '@/components/arc/dialog/dialog'
 import { Input } from '@/components/arc/input/input'
 import SegmentedControl from '@/components/arc/segmented-control/segmented-control'
 import { Slider } from '@/components/arc/slider/slider'
@@ -16,6 +15,7 @@ import type { BentoDoc, MediaRef } from '../model/types'
 import { Group, toast } from '../ui'
 import { buildCss, buildEmbed, buildHtmlPage, buildReactComponent, type Size } from './codegen'
 import { renderImage, renderToCanvas, type ImageFormat } from './image'
+import { ResponsiveContent, ResponsiveDialog } from '../ui/sheet'
 import './export.css'
 
 export type ExportTab = 'html' | 'react' | 'embed' | 'image'
@@ -138,8 +138,8 @@ export function ExportDialog({
 }) {
   const doc = useMemo(() => exportable(rawDoc), [rawDoc])
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveContent
         title="Export"
         description={doc.sizeMode === 'fit' ? `Responsive, previewing at ${size.w}×${size.h}` : `${size.w}×${size.h}, ${doc.cells.length} ${doc.cells.length === 1 ? 'box' : 'boxes'}`}
         className="export-dialog"
@@ -172,8 +172,8 @@ export function ExportDialog({
             <ImageTab doc={doc} size={size} />
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveContent>
+    </ResponsiveDialog>
   )
 }
 

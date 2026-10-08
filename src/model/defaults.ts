@@ -9,6 +9,7 @@ export const SIZE_PRESETS = [
   { id: '1080x1350', label: 'Portrait 4:5', w: 1080, h: 1350 },
   { id: '1080x1920', label: 'Story 9:16', w: 1080, h: 1920 },
   { id: '1200x630', label: 'Social card', w: 1200, h: 630 },
+  { id: '390x844', label: 'Mobile', w: 390, h: 844 },
 ] as const
 
 /** Fully transparent, as 8-digit hex so CSS, canvas and Arc's color picker all understand it. */

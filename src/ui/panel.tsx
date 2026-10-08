@@ -98,7 +98,8 @@ export function NumberInput({
 
   const scrub = useRef<{ x: number; v: number } | null>(null)
   return (
-    <label className="p-field">
+    // data-vaul-no-drag: scrubbing or selecting text here must not drag the phone bottom sheet.
+    <label className="p-field" data-vaul-no-drag="">
       <span
         className="p-prefix"
         aria-hidden="true"
@@ -271,7 +272,7 @@ export function RulerSlider({ value, onChange, max, step, major, label }: { valu
   for (let v = 0; v <= max; v += step) ticks.push(<span key={v} data-major={v % major === 0 ? '' : undefined} style={{ left: `${(v / max) * 100}%` }} />)
   const shown = Math.min(max, value)
   return (
-    <div className="p-slider" style={{ ['--p' as string]: `${(shown / max) * 100}%` }}>
+    <div className="p-slider" data-vaul-no-drag="" style={{ ['--p' as string]: `${(shown / max) * 100}%` }}>
       <div className="p-slider-ticks" aria-hidden="true">
         {ticks}
       </div>

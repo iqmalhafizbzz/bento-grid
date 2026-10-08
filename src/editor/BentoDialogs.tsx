@@ -1,11 +1,11 @@
 import { Columns3, Monitor, Rows3 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/arc/button/button'
-import { Dialog, DialogClose, DialogContent } from '@/components/arc/dialog/dialog'
 import { Input } from '@/components/arc/input/input'
 import { SIZE_PRESETS, emptyDoc } from '../model/defaults'
 import { useStore } from '../model/store'
 import { FieldRow, NumberInput, SelectInput, type SelectOption } from '../ui/panel'
+import { ResponsiveClose, ResponsiveContent, ResponsiveDialog, useIsMobile } from '../ui/sheet'
 import './bento-dialogs.css'
 
 type SizeChoice = (typeof SIZE_PRESETS)[number]['id'] | 'fit' | 'custom'
@@ -16,18 +16,20 @@ const SIZE_OPTIONS: SelectOption<SizeChoice>[] = [
   { value: 'custom', label: 'Custom size' },
 ]
 
-/** Name, size and grid for a new bento. Defaults: Desktop HD, 4 × 3. */
+/** Name, size and grid for a new bento. Defaults: Desktop HD, 4 × 3 (Mobile, 2 × 4 on phones). */
 export function NewBentoDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  return <Dialog open={open} onOpenChange={onOpenChange}>{open && <NewBentoForm onDone={() => onOpenChange(false)} />}</Dialog>
+  return <ResponsiveDialog open={open} onOpenChange={onOpenChange}>{open && <NewBentoForm onDone={() => onOpenChange(false)} />}</ResponsiveDialog>
 }
 
 function NewBentoForm({ onDone }: { onDone: () => void }) {
   const { bentos, dispatch } = useStore()
+  // Phones start from a phone-sized frame with a 2 × 4 grid; everything else from Desktop HD, 4 × 3.
+  const mobile = useIsMobile()
   const [name, setName] = useState('')
-  const [size, setSize] = useState<SizeChoice>('1920x1080')
-  const [custom, setCustom] = useState({ w: 1920, h: 1080 })
-  const [cols, setCols] = useState(4)
-  const [rows, setRows] = useState(3)
+  const [size, setSize] = useState<SizeChoice>(mobile ? '390x844' : '1920x1080')
+  const [custom, setCustom] = useState(mobile ? { w: 390, h: 844 } : { w: 1920, h: 1080 })
+  const [cols, setCols] = useState(mobile ? 2 : 4)
+  const [rows, setRows] = useState(mobile ? 4 : 3)
   const [touched, setTouched] = useState(false)
   const trimmed = name.trim()
   const error = touched && !trimmed ? 'Give the bento a name' : undefined
@@ -50,7 +52,7 @@ function NewBentoForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <DialogContent title="New bento" description="Name it and pick a size and grid. You can change the size and grid later." className="bento-dialog">
+    <ResponsiveContent title="New bento" description="Name it and pick a size and grid. You can change the size and grid later." className="bento-dialog">
       <form
         className="bento-form"
         onSubmit={(e) => {
@@ -85,32 +87,32 @@ function NewBentoForm({ onDone }: { onDone: () => void }) {
           </FieldRow>
         </div>
         <div className="bento-form-actions">
-          <DialogClose asChild>
+          <ResponsiveClose>
             <Button type="button" variant="secondary" size="sm">
               Cancel
             </Button>
-          </DialogClose>
+          </ResponsiveClose>
           <Button type="submit" size="sm">
             Create bento
           </Button>
         </div>
       </form>
-    </DialogContent>
+    </ResponsiveContent>
   )
 }
 
 export function DeleteBentoDialog({ bento, onOpenChange }: { bento: { id: string; name: string } | null; onOpenChange: (o: boolean) => void }) {
   const { dispatch } = useStore()
   return (
-    <Dialog open={!!bento} onOpenChange={onOpenChange}>
+    <ResponsiveDialog open={!!bento} onOpenChange={onOpenChange}>
       {bento && (
-        <DialogContent title={`Delete “${bento.name}”?`} description="This removes the bento and all of its boxes. You can't undo this." className="bento-dialog">
+        <ResponsiveContent title={`Delete “${bento.name}”?`} description="This removes the bento and all of its boxes. You can't undo this." className="bento-dialog">
           <div className="bento-form-actions">
-            <DialogClose asChild>
+            <ResponsiveClose>
               <Button type="button" variant="secondary" size="sm">
                 Cancel
               </Button>
-            </DialogClose>
+            </ResponsiveClose>
             <Button
               type="button"
               variant="danger"
@@ -123,8 +125,8 @@ export function DeleteBentoDialog({ bento, onOpenChange }: { bento: { id: string
               Delete bento
             </Button>
           </div>
-        </DialogContent>
+        </ResponsiveContent>
       )}
-    </Dialog>
+    </ResponsiveDialog>
   )
 }
