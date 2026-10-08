@@ -12,6 +12,9 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
+  /* Always reserve the scrollbar's lane so content never shifts when it appears. */
+  scrollbar-gutter: stable;
+  padding-right: 4px;
 }
 .sidebar-scroll .p-header {
   position: static;
