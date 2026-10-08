@@ -10,6 +10,7 @@ import SegmentedControl from '@/components/arc/segmented-control/segmented-contr
 import { Slider } from '@/components/arc/slider/slider'
 import { Switch } from '@/components/arc/switch/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/arc/tabs/tabs'
+import { resolveVisibility } from '../model/defaults'
 import { blobToDataUrl, extFor, getBlob } from '../model/media'
 import type { BentoDoc, MediaRef } from '../model/types'
 import { Group, toast } from '../ui'
@@ -76,9 +77,9 @@ function uniqueMedia(doc: BentoDoc) {
   return [...seen.values()]
 }
 
-/** Doc as exported. Kept as a seam for export-only adjustments. */
+/** Doc as exported: what the panel shows as removed or hidden doesn't export. */
 function exportable(doc: BentoDoc): BentoDoc {
-  return doc
+  return resolveVisibility(doc)
 }
 
 async function inlineHtml(doc: BentoDoc, size: Size) {

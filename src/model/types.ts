@@ -51,7 +51,12 @@ export interface Cell {
   w: number
   h: number
   fill: Fill
+  /** Fill removed with the panel's minus button. The last fill is kept so + restores it. */
+  fillOff?: boolean
+  /** Fill hidden with the eye button. */
+  fillHidden?: boolean
   media: MediaRef | null
+  mediaHidden?: boolean
   text: TextContent
   /** Whether the text layer is shown. The text is kept when hidden. */
   textOn: boolean
@@ -74,6 +79,9 @@ export interface BentoDoc {
   padding: number
   radius: number
   background: Background
+  /** Background removed (minus) or hidden (eye): the canvas is transparent. */
+  backgroundOff?: boolean
+  backgroundHidden?: boolean
   /** One stroke drawn inside every box's edge. Older saves have none. */
   stroke?: Stroke
   cells: Cell[]
@@ -83,6 +91,7 @@ export interface Stroke {
   on: boolean
   width: number
   color: string
+  hidden?: boolean
 }
 
 export interface Rect {

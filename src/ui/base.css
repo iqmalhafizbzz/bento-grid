@@ -1,10 +1,23 @@
 /* App-wide base on top of Arc's foundation tokens. Only editor-specific tokens live here. */
 :root {
-  --font-geist: 'Geist';
+  /* Typography: Inter everywhere, 14px at most, weights 500–600. Only Inter 500 and 600 are
+     loaded, so any 400 request renders at 500 and any 700 at 600. */
+  --font-geist: 'Inter';
   --font-inter: 'Inter';
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 14px;
+  --text-xl: 14px;
+  --text-2xl: 14px;
+  --text-3xl: 14px;
+  --text-4xl: 14px;
+  --text-5xl: 14px;
   --canvas-bg: oklch(93% 0 0);
   --canvas-dot: oklch(85% 0 0);
-  --panel-w-left: 288px;
+  --panel-w-left: 272px;
   /* All motion 2x faster than Arc's defaults, and smooth: the spring easing (which overshoots)
      is replaced by the standard ease-out curve. */
   --duration-instant: 60ms;
@@ -13,7 +26,11 @@
   --duration-considered: 240ms;
   --duration-spring: 290ms;
   --ease-spring: var(--ease-standard);
-  --panel-w-right: 328px;
+  /* Less curvy than Arc's defaults (18 / 26 / 34px). */
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-surface: 10px;
+  --panel-w-right: 272px;
 }
 :root[data-theme='dark'] {
   --canvas-bg: oklch(14% 0 0);
@@ -36,6 +53,7 @@ body,
 body {
   font-family: var(--font-body);
   font-size: var(--text-sm);
+  font-weight: 500;
   line-height: var(--leading-body);
   letter-spacing: var(--tracking-body);
   color: var(--foreground);

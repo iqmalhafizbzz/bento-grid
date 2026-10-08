@@ -1,9 +1,11 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Canvas } from './editor/Canvas'
 import { EditorProvider, useDocSize, useEditor } from './editor/editorState'
-import { Inspector } from './editor/Inspector'
-import { LeftPanel } from './editor/LeftPanel'
-import { TopBar } from './editor/TopBar'
+import { Sidebar } from './editor/Sidebar'
+import { DeleteBentoDialog, NewBentoDialog } from './editor/BentoDialogs'
+import { LayoutGrid } from 'lucide-react'
+import { Button } from '@/components/arc/button/button'
+import { EmptyState } from '@/components/arc/empty-state/empty-state'
 import type { ExportTab } from './export/ExportDialog'
 import { firstFreeSlot } from './model/geometry'
 import { addMediaFile, isSupportedFile } from './model/media'
@@ -20,7 +22,7 @@ function isTyping(t: EventTarget | null) {
 }
 
 function Shortcuts() {
-  const { dispatch, selected, doc, updateCell } = useStore()
+  const { dispatch, selected, doc, updateCell, activeId } = useStore()
   const { cropId, setCropId } = useEditor()
 
   useEffect(() => {
@@ -54,7 +56,7 @@ function Shortcuts() {
   // Paste media: into the selected box, otherwise into a new box in the first free slot.
   useEffect(() => {
     const onPaste = async (e: ClipboardEvent) => {
-      if (isTyping(e.target)) return
+      if (isTyping(e.target) || !activeId) return
       const file = [...(e.clipboardData?.files ?? [])].find(isSupportedFile)
       if (!file) return
       e.preventDefault()
@@ -73,27 +75,50 @@ function Shortcuts() {
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
-  }, [selected, doc, dispatch, updateCell])
+  }, [selected, doc, dispatch, updateCell, activeId])
 
   return null
 }
 
+/** Entry point 1: shown in place of the canvas until a bento exists. */
+function EmptyWorkspace({ onNew }: { onNew: () => void }) {
+  return (
+    <div className="canvas-viewport workspace-empty">
+      <EmptyState
+        icon={<LayoutGrid size={24} />}
+        title="No bentos yet"
+        description="Create a bento to start laying out boxes. You can make as many as you like and switch between them from the sidebar."
+        action={
+          <Button size="sm" onClick={onNew}>
+            Create new bento
+          </Button>
+        }
+        label="Workspace"
+      />
+    </div>
+  )
+}
+
 function Shell() {
-  const { doc } = useStore()
+  const { doc, activeId } = useStore()
   const size = useDocSize(doc)
   const [exportOpen, setExportOpen] = useState(false)
   const [tab, setTab] = useState<ExportTab>('html')
+  const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null)
   return (
     <div className="app">
-      <TopBar
+      {activeId ? <Canvas /> : <EmptyWorkspace onNew={() => setCreating(true)} />}
+      <Sidebar
         onExport={(t) => {
           setTab(t)
           setExportOpen(true)
         }}
+        onNew={() => setCreating(true)}
+        onDelete={setDeleting}
       />
-      <LeftPanel />
-      <Canvas />
-      <Inspector />
+      <NewBentoDialog open={creating} onOpenChange={setCreating} />
+      <DeleteBentoDialog bento={deleting} onOpenChange={(o) => !o && setDeleting(null)} />
       {exportOpen && (
         <Suspense fallback={null}>
           <ExportDialog open={exportOpen} onOpenChange={setExportOpen} tab={tab} onTab={setTab} doc={doc} size={size} />

@@ -1,11 +1,11 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from 'react'
 import { Button } from '@/components/arc/button/button'
-import { activeStroke, isTransparent } from '../model/defaults'
+import { activeStroke, isTransparent, visibleBackground } from '../model/defaults'
 import { cellAt, coverPlacement, fits, gridMetrics, mediaPlacement, occupancy, planMove, rectFromCorners, type GridMetrics } from '../model/geometry'
 import { addMediaFile, isSupportedFile } from '../model/media'
 import { useStore } from '../model/store'
-import type { BentoDoc, Cell, Rect } from '../model/types'
+import type { BentoDoc, Cell, MediaRef, Rect } from '../model/types'
 import { toast } from '../ui'
 import { canvasColors } from './canvasColors'
 import { CellView, useMediaUrl } from './CellView'
@@ -31,6 +31,17 @@ interface BoxDrag {
   want: Rect
   /** Placement of every affected box for the last arrangement that fit; committed on drop. */
   plan: Record<string, Rect> | null
+}
+
+/** Resizing media from a corner of its bounding box while adjusting. */
+interface MediaResize {
+  id: string
+  /** Which corner: -1 = left / top, 1 = right / bottom. */
+  cx: -1 | 1
+  cy: -1 | 1
+  /** Placement and media when the drag started, in document pixels relative to the box. */
+  start: { dx: number; dy: number; dw: number; dh: number }
+  media: MediaRef
 }
 
 /** Panning or moving media inside a box being adjusted. */
@@ -74,6 +85,7 @@ export function Canvas() {
   const [create, setCreate] = useState<CreateDrag | null>(null)
   const [boxDrag, setBoxDrag] = useState<BoxDrag | null>(null)
   const [pan, setPan] = useState<PanDrag | null>(null)
+  const [mresize, setMresize] = useState<MediaResize | null>(null)
   const [dropTarget, setDropTarget] = useState<Rect | null>(null)
   // Latest drag state for event handlers; commits happen outside state updaters.
   const boxDragRef = useRef(boxDrag)
@@ -153,8 +165,32 @@ export function Canvas() {
 
   /* ----- drawing new boxes and panning media (plain pointer events) ----- */
   useEffect(() => {
-    if (!create && !pan) return
+    if (!create && !pan && !mresize) return
     const onMove = (e: PointerEvent) => {
+      if (mresize) {
+        const cell = doc.cells.find((c) => c.id === mresize.id)
+        if (!cell?.media) return
+        const box = metrics.rect(cell)
+        const pt = toDoc(e.clientX, e.clientY)
+        const px = pt.x - box.x
+        const py = pt.y - box.y
+        const { start: s0, media: m0, cx, cy } = mresize
+        // The opposite corner stays pinned; the larger of the two axis scales wins, aspect locked.
+        const ax = cx > 0 ? s0.dx : s0.dx + s0.dw
+        const ay = cy > 0 ? s0.dy : s0.dy + s0.dh
+        const k = Math.max(0.02, Math.max(((px - ax) * cx) / s0.dw, ((py - ay) * cy) / s0.dh))
+        if (m0.mode === 'free' && m0.free) {
+          const dw = s0.dw * k
+          const dh = s0.dh * k
+          const w = Math.min(5, Math.max(0.05, dw / box.w))
+          const x = (ax + (cx * dw) / 2) / box.w
+          const y = (ay + (cy * dh) / 2) / box.h
+          updateCell(cell.id, { media: { ...cell.media, free: { w, x: Math.min(1.5, Math.max(-0.5, x)), y: Math.min(1.5, Math.max(-0.5, y)) } } }, 'mresize')
+        } else {
+          updateCell(cell.id, { media: { ...cell.media, zoom: Math.min(5, Math.max(1, m0.zoom * k)) } }, 'mresize')
+        }
+        return
+      }
       if (pan) {
         const cell = doc.cells.find((c) => c.id === pan.id)
         const m = cell?.media
@@ -189,6 +225,7 @@ export function Canvas() {
       if (c?.valid) dispatch({ type: 'addCell', rect: c.valid })
       setCreate(null)
       setPan(null)
+      setMresize(null)
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
@@ -199,7 +236,7 @@ export function Canvas() {
       window.removeEventListener('pointercancel', onUp)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!create, pan, doc, scale, metrics])
+  }, [!!create, pan, mresize, doc, scale, metrics])
 
   /* ----- wheel zoom or resize while adjusting media ----- */
   useEffect(() => {
@@ -275,7 +312,8 @@ export function Canvas() {
 
   const handle = 10 / scale
   const cropCell = cropId ? doc.cells.find((c) => c.id === cropId) : undefined
-  const background = doc.background
+  const shownBg = visibleBackground(doc)
+  const background = shownBg ?? { kind: 'color' as const, color: '#00000000' }
   const transparent = background.kind === 'color' && isTransparent(background.color)
   const dragging = boxDrag ? boxDrag.data.kind : create ? 'create' : pan ? 'pan' : undefined
   const ghost = boxDrag && !sameRect(boxDrag.want, boxDrag.origin) ? boxDrag : null
@@ -357,6 +395,15 @@ export function Canvas() {
                   onDoubleClick={() => cell.media && setCropId(cell.id)}
                 >
                   {cropping && cell.media && <CropGhost cell={cell} box={metrics.rect(cell)} radius={doc.radius} />}
+                  {cropping && cell.media && (
+                    <MediaBounds
+                      cell={cell}
+                      box={metrics.rect(cell)}
+                      scale={scale}
+                      resizing={mresize?.id === cell.id}
+                      onCorner={(cx, cy, start) => setMresize({ id: cell.id, cx, cy, start, media: cell.media! })}
+                    />
+                  )}
                   <CellView cell={cell} radius={doc.radius} stroke={activeStroke(doc)} />
                   {selected && !cropping && (
                     <>
@@ -470,6 +517,56 @@ const HANDLES: [string, Edge][] = [
   ['se', { s: true, e: true }],
   ['sw', { s: true, w: true }],
 ]
+
+/**
+ * Bounding box of the media while adjusting: a frame around its full extent with four corner
+ * handles, and its rendered size in pixels while a corner is being dragged.
+ */
+function MediaBounds({
+  cell,
+  box,
+  scale,
+  resizing,
+  onCorner,
+}: {
+  cell: Cell
+  box: { w: number; h: number }
+  scale: number
+  resizing: boolean
+  onCorner: (cx: -1 | 1, cy: -1 | 1, start: { dx: number; dy: number; dw: number; dh: number }) => void
+}) {
+  const m = cell.media!
+  const p = mediaPlacement(box.w, box.h, m.width, m.height, m)
+  const corners: [-1 | 1, -1 | 1, string][] = [
+    [-1, -1, 'nwse-resize'],
+    [1, -1, 'nesw-resize'],
+    [-1, 1, 'nesw-resize'],
+    [1, 1, 'nwse-resize'],
+  ]
+  return (
+    <div className="media-bounds" style={{ left: p.dx, top: p.dy, width: p.dw, height: p.dh }}>
+      {corners.map(([cx, cy, cursor]) => (
+        <span
+          key={`${cx}${cy}`}
+          className="media-handle"
+          role="presentation"
+          style={{ left: cx < 0 ? 0 : '100%', top: cy < 0 ? 0 : '100%', cursor }}
+          onPointerDown={(e) => {
+            if (e.button !== 0) return
+            e.stopPropagation()
+            e.preventDefault()
+            onCorner(cx, cy, p)
+          }}
+        />
+      ))}
+      {resizing && (
+        <span className="media-size" style={{ fontSize: 12 / scale, padding: `${2 / scale}px ${7 / scale}px`, marginTop: 8 / scale }}>
+          {Math.round(p.dw)} × {Math.round(p.dh)}
+        </span>
+      )}
+    </div>
+  )
+}
 
 /** Faint view of the whole media while adjusting, so you can see what's outside the frame. */
 function CropGhost({ cell, box, radius }: { cell: Cell; box: { w: number; h: number }; radius: number }) {

@@ -1,0 +1,24 @@
+.bento-dialog {
+  width: min(400px, calc(100vw - 32px));
+  max-width: none;
+}
+.bento-form {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-2);
+}
+.bento-form-group {
+  display: grid;
+  gap: var(--space-2);
+}
+.bento-form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.bento-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}

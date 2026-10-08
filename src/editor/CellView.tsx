@@ -1,5 +1,5 @@
 import { useSyncExternalStore, type CSSProperties } from 'react'
-import { FONT_STACKS, fillCss } from '../model/defaults'
+import { FONT_STACKS, fillCss, visibleFill, visibleMedia } from '../model/defaults'
 import { mediaUrl, subscribeMedia } from '../model/media'
 import type { Cell, MediaRef, Stroke } from '../model/types'
 
@@ -66,13 +66,16 @@ export function CellView({ cell, radius, stroke }: { cell: Cell; radius: number;
     overflow: 'hidden',
     borderRadius: radius,
     // Media sits on the box fill, which shows around free-placed or transparent media.
-    background: fillCss(cell.fill),
+    background: (() => {
+      const f = visibleFill(cell)
+      return f ? fillCss(f) : undefined
+    })(),
   }
 
   const t = cell.text
   return (
     <div style={base}>
-      {cell.media && <MediaView media={cell.media} cellId={cell.id} />}
+      {visibleMedia(cell) && <MediaView media={cell.media!} cellId={cell.id} />}
       {cell.textOn && (
         <div
           style={{

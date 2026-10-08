@@ -4,8 +4,10 @@ import { makeCell, mediaIds, emptyDoc } from './defaults'
 import { gcMedia, hydrateMedia, newId } from './media'
 import type { BentoDoc, Cell, Rect } from './types'
 
-// v2: earlier saves held the old pre-filled starter layout.
-const STORAGE_KEY = 'bento:doc:v2'
+/** All bentos and which one is open. */
+const WORKSPACE_KEY = 'bento:workspace:v1'
+/** The single-document save from before bentos had names; migrated into the workspace once. */
+const LEGACY_KEY = 'bento:doc:v2'
 const HISTORY_LIMIT = 100
 const COALESCE_MS = 600
 
@@ -25,8 +27,23 @@ export type Action =
   | { type: 'select'; id: string | null }
   | { type: 'undo' }
   | { type: 'redo' }
+  | { type: 'createBento'; name: string; doc: BentoDoc }
+  | { type: 'switchBento'; id: string }
+  | { type: 'deleteBento'; id: string }
+
+export interface Bento {
+  id: string
+  name: string
+  /** Epoch milliseconds. */
+  createdAt: number
+  doc: BentoDoc
+}
 
 interface State {
+  /** Every bento. The open one's entry may be stale; `doc` holds its latest version. */
+  bentos: Bento[]
+  activeId: string | null
+  /** The open bento (a blank placeholder when none is open). */
   doc: BentoDoc
   past: BentoDoc[]
   future: BentoDoc[]
@@ -50,7 +67,40 @@ function commit(state: State, doc: BentoDoc, key?: string, extra?: Partial<State
   }
 }
 
+/** The workspace with the open bento's latest doc written back into its entry. */
+function savedBentos(state: State): Bento[] {
+  return state.bentos.map((b) => (b.id === state.activeId ? { ...b, doc: state.doc } : b))
+}
+
+/** Open a bento: its own doc, a fresh undo history, nothing selected. */
+function open(state: State, bentos: Bento[], id: string | null): State {
+  const target = bentos.find((b) => b.id === id)
+  return { ...state, bentos, activeId: target?.id ?? null, doc: target?.doc ?? emptyDoc(), past: [], future: [], selectedId: null, lastKey: null }
+}
+
+function workspaceReducer(state: State, action: Action): State | null {
+  switch (action.type) {
+    case 'createBento': {
+      const bento = { id: newId('b'), name: action.name, createdAt: Date.now(), doc: action.doc }
+      return open(state, [...savedBentos(state), bento], bento.id)
+    }
+    case 'switchBento':
+      return action.id === state.activeId ? state : open(state, savedBentos(state), action.id)
+    case 'deleteBento': {
+      const bentos = savedBentos(state).filter((b) => b.id !== action.id)
+      if (action.id !== state.activeId) return { ...state, bentos }
+      return open(state, bentos, bentos[0]?.id ?? null)
+    }
+    default:
+      return null
+  }
+}
+
 function reducer(state: State, action: Action): State {
+  const ws = workspaceReducer(state, action)
+  if (ws) return ws
+  // Nothing to edit until a bento is open.
+  if (!state.activeId) return state
   const { doc } = state
   switch (action.type) {
     case 'setDoc': {
@@ -131,6 +181,8 @@ function reducer(state: State, action: Action): State {
         selectedId: next.cells.some((c) => c.id === state.selectedId) ? state.selectedId : null,
       }
     }
+    default:
+      return state
   }
 }
 
@@ -141,20 +193,39 @@ function migrateCell(c: Cell & { kind?: 'fill' | 'media' | 'text' }): Cell {
   return { ...rest, media: kind === 'media' ? rest.media : null, textOn: kind === 'text' }
 }
 
-function loadDoc(): BentoDoc {
+function migrateDoc(d: BentoDoc): BentoDoc {
+  return { ...d, cells: d.cells.map(migrateCell) }
+}
+
+function loadWorkspace(): { bentos: Bento[]; activeId: string | null } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(WORKSPACE_KEY)
     if (raw) {
-      const d = JSON.parse(raw) as BentoDoc
-      if (d && d.version === 1 && Array.isArray(d.cells)) return { ...d, cells: d.cells.map(migrateCell) }
+      const w = JSON.parse(raw) as { bentos: Bento[]; activeId: string | null }
+      if (Array.isArray(w.bentos)) {
+        const bentos = w.bentos.filter((b) => b?.doc?.version === 1).map((b) => ({ ...b, createdAt: b.createdAt ?? Date.now(), doc: migrateDoc(b.doc) }))
+        return { bentos, activeId: bentos.some((b) => b.id === w.activeId) ? w.activeId : (bentos[0]?.id ?? null) }
+      }
+    }
+    // A design saved before bentos had names becomes the first bento, if it has any boxes.
+    const legacy = localStorage.getItem(LEGACY_KEY)
+    if (legacy) {
+      const d = JSON.parse(legacy) as BentoDoc
+      if (d?.version === 1 && Array.isArray(d.cells) && d.cells.length) {
+        const bento = { id: newId('b'), name: 'My bento', createdAt: Date.now(), doc: migrateDoc(d) }
+        return { bentos: [bento], activeId: bento.id }
+      }
     }
   } catch {
-    /* fall through */
+    /* storage unavailable or unreadable */
   }
-  return emptyDoc()
+  return { bentos: [], activeId: null }
 }
 
 interface StoreValue {
+  /** Names and ids of every bento, in creation order. */
+  bentos: { id: string; name: string; createdAt: number }[]
+  activeId: string | null
   doc: BentoDoc
   selectedId: string | null
   selected: Cell | null
@@ -168,36 +239,43 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({
-    doc: loadDoc(),
-    past: [],
+  const [state, dispatch] = useReducer(reducer, undefined, (): State => {
+    const { bentos, activeId } = loadWorkspace()
+    return {
+      bentos,
+      activeId,
+      doc: bentos.find((b) => b.id === activeId)?.doc ?? emptyDoc(),
+      past: [],
     future: [],
     selectedId: null,
-    lastKey: null,
-    lastAt: 0,
-  }))
+      lastKey: null,
+      lastAt: 0,
+    }
+  })
 
   // Load persisted media once.
   const hydrated = useRef(false)
   useEffect(() => {
     if (hydrated.current) return
     hydrated.current = true
-    void hydrateMedia(mediaIds(state.doc))
-  }, [state.doc])
+    void hydrateMedia(state.bentos.flatMap((b) => mediaIds(b.doc)))
+  }, [state.bentos])
 
   // Persist the doc (debounced) and clean up orphaned media blobs.
   useEffect(() => {
     const t = setTimeout(() => {
+      const bentos = savedBentos(state)
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.doc))
+        localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ activeId: state.activeId, bentos }))
       } catch {
         /* quota or privacy mode */
       }
-      const keep = new Set([state.doc, ...state.past, ...state.future].flatMap(mediaIds))
+      // Keep media used by any bento or by the open bento's undo history.
+      const keep = new Set([...bentos.map((b) => b.doc), ...state.past, ...state.future].flatMap(mediaIds))
       void gcMedia(keep)
     }, 400)
     return () => clearTimeout(t)
-  }, [state.doc, state.past, state.future])
+  }, [state])
 
   const updateCell = useCallback<StoreValue['updateCell']>(
     (id, patch, key) => dispatch({ type: 'updateCell', id, patch, key }),
@@ -207,6 +285,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<StoreValue>(
     () => ({
+      bentos: state.bentos.map((b) => ({ id: b.id, name: b.name, createdAt: b.createdAt })),
+      activeId: state.activeId,
       doc: state.doc,
       selectedId: state.selectedId,
       selected: state.doc.cells.find((c) => c.id === state.selectedId) ?? null,
@@ -216,7 +296,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateCell,
       setDoc,
     }),
-    [state.doc, state.selectedId, state.past.length, state.future.length, updateCell, setDoc],
+    [state.bentos, state.activeId, state.doc, state.selectedId, state.past.length, state.future.length, updateCell, setDoc],
   )
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
