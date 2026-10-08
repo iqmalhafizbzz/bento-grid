@@ -80,7 +80,7 @@ export function Sidebar({ onExport, onNew, onDelete }: { onExport: (tab: ExportT
 
       <Toolbar onExport={onExport} />
 
-      <div className="sidebar-scroll">
+      <OverlayScroll>
         <BentoPicker onNew={onNew} onDelete={onDelete} />
         {activeId && (
           <>
@@ -102,8 +102,80 @@ export function Sidebar({ onExport, onNew, onDelete }: { onExport: (tab: ExportT
             <BoxSections />
           </>
         )}
-      </div>
+      </OverlayScroll>
     </aside>
+  )
+}
+
+/**
+ * Scroll area with a thin scrollbar drawn over its right padding lane. The native scrollbar is
+ * hidden, so content (and its separators) keeps full width whether or not it overflows.
+ */
+function OverlayScroll({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [thumb, setThumb] = useState<{ top: number; height: number } | null>(null)
+  const [active, setActive] = useState(false)
+  const grab = useRef<{ y: number; scroll: number } | null>(null)
+
+  useEffect(() => {
+    const el = ref.current!
+    const measure = () => {
+      const { scrollHeight: sh, clientHeight: ch, scrollTop: st } = el
+      if (sh <= ch + 1) return setThumb(null)
+      const height = Math.max(24, (ch / sh) * ch)
+      setThumb({ height, top: (st / (sh - ch)) * (ch - height) })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    const mo = new MutationObserver(() => {
+      for (const c of el.children) ro.observe(c)
+      measure()
+    })
+    for (const c of el.children) ro.observe(c)
+    mo.observe(el, { childList: true, subtree: true })
+    el.addEventListener('scroll', measure, { passive: true })
+    return () => {
+      ro.disconnect()
+      mo.disconnect()
+      el.removeEventListener('scroll', measure)
+    }
+  }, [])
+
+  return (
+    <div className="sidebar-scroll-wrap">
+      <div className="sidebar-scroll" ref={ref}>
+        {children}
+      </div>
+      {thumb && (
+        <div
+          className="sidebar-thumb"
+          data-active={active ? '' : undefined}
+          style={{ top: thumb.top, height: thumb.height }}
+          aria-hidden="true"
+          onPointerDown={(e) => {
+            e.preventDefault()
+            ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+            grab.current = { y: e.clientY, scroll: ref.current!.scrollTop }
+            setActive(true)
+          }}
+          onPointerMove={(e) => {
+            const el = ref.current!
+            if (!grab.current) return
+            const ratio = (el.scrollHeight - el.clientHeight) / (el.clientHeight - thumb.height)
+            el.scrollTop = grab.current.scroll + (e.clientY - grab.current.y) * ratio
+          }}
+          onPointerUp={() => {
+            grab.current = null
+            setActive(false)
+          }}
+          onPointerCancel={() => {
+            grab.current = null
+            setActive(false)
+          }}
+        />
+      )}
+    </div>
   )
 }
 

@@ -7,14 +7,48 @@
   background: var(--surface);
   border-left: 1px solid var(--border);
 }
-.sidebar-scroll {
+/* The native scrollbar is hidden; .sidebar-thumb overlays the extra right padding lane,
+   so rows and their separators keep full width whether or not the panel scrolls. */
+.sidebar-scroll-wrap {
+  --scroll-lane: 8px;
+  position: relative;
   flex: 1;
   min-height: 0;
+  display: flex;
+}
+.sidebar-scroll {
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  /* Always reserve the scrollbar's lane so content never shifts when it appears. */
-  scrollbar-gutter: stable;
-  padding-right: 4px;
+  scrollbar-width: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+.sidebar-scroll > .p-header,
+.sidebar-scroll > .p-section,
+.sidebar-scroll > .bento-bar {
+  padding-right: calc(var(--space-2) + var(--scroll-lane));
+}
+.sidebar-thumb {
+  position: absolute;
+  right: 2px;
+  width: 4px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--foreground) 22%, transparent);
+  opacity: 0.6;
+  touch-action: none;
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    width var(--duration-fast) var(--ease-standard);
+}
+.sidebar-scroll-wrap:hover .sidebar-thumb {
+  opacity: 1;
+}
+.sidebar-thumb:hover,
+.sidebar-thumb[data-active] {
+  width: 6px;
+  background: color-mix(in oklab, var(--foreground) 36%, transparent);
 }
 .sidebar-scroll .p-header {
   position: static;
